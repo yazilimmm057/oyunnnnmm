@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>6'lı Şans Oyunları</title>
+  
+    <style>
+        :root {
+    --bg-dark: #0b090a;
+    --primary: #7b2cbf;
+    --secondary: #3c096c;
+    --accent: #ffd700;
+    --p1-color: #10b981;
+    --p2-color: #ef4444;
+    --text-light: #f8f9fa;
+    --font-main: 'Poppins', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-main);
+}
+
+body {
+    background: radial-gradient(circle at center, #1a1a2e, var(--bg-dark));
+    color: var(--text-light);
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 15px;
+    opacity: 0;
+    animation: epicEntrance 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Arka Plan Mouse Glow */
+#mouse-glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+        800px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh),
+        rgba(59, 130, 246, 0.3), /* Şık mavi parlaklık */
+        transparent 60%
+    );
+    transition: background 0.1s ease;
+}
+
+/* =========================================
+   GİRİŞ ANİMASYONU (LOADER)
+========================================= */
+.loader-wrapper {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-dark);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 1s, visibility 1s;
+}
+
+.magic-circle {
+    width: 100px;
+    height: 100px;
+    border: 5px solid transparent;
+    border-top-color: var(--accent);
+    border-bottom-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite;
+    box-shadow: 0 0 20px var(--primary);
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 1.5rem;
+    color: var(--accent);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 10px var(--accent); } }
+@keyframes epicEntrance { 
+    0% { opacity: 0; transform: scale(0.5) translateY(100px) rotateX(20deg); filter: blur(20px); } 
+    60% { opacity: 0.8; transform: scale(1.05) translateY(-10px) rotateX(-5deg); filter: blur(0px); } 
+    100% { opacity: 1; transform: scale(1) translateY(0) rotateX(0deg); filter: blur(0px); } 
+}
+
+/* =========================================
+   ANA MENÜ
+========================================= */
+.main-title {
+    font-size: 3rem;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: #a1a1aa;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.menu-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 460px;
+}
+
+@media (max-width: 480px) {
+    .menu-buttons {
+        grid-template-columns: 1fr;
+        max-width: 300px;
+    }
+}
+
+.btn {
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: white;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.glow-btn:hover, .glow-btn:active {
+    box-shadow: 0 0 20px var(--primary);
+    transform: scale(1.05);
+}
+
+.back-btn {
+    margin-top: auto;
+    background: transparent;
+    border: 1px solid var(--primary);
+    font-size: 1rem;
+    padding: 10px;
+    width: 100%;
+    max-width: 300px;
+}
+
+/* =========================================
+   OYUN ALANI & OYUNCULAR (ÜST ÜSTE)
+========================================= */
+#game-screen {
+    justify-content: flex-start;
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
+.game-board-container {
+    flex-grow: 1;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.game-board {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* OYUN CU SKORLARI - YAN YANA */
+.players-container {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.player {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 10px 12px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    opacity: 0.5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.player.active {
+    opacity: 1;
+    transform: scale(1.02);
+}
+
+#player1.active { border-color: var(--p1-color); box-shadow: 0 0 15px rgba(16,185,129,0.4); }
+#player2.active { border-color: var(--p2-color); box-shadow: 0 0 15px rgba(239,68,68,0.4); }
+
+.player-name { font-size: 1.2rem; }
+#player1 .player-name { color: var(--p1-color); }
+#player2 .player-name { color: var(--p2-color); }
+
+.score-box { font-size: 1.2rem; font-weight: bold; }
+.turn-indicator { font-size: 0.8rem; color: var(--accent); opacity: 0; }
+.player.active .turn-indicator { opacity: 1; animation: blink 1s infinite alternate; }
+
+/* =========================================
+   OYUN 1: KARTLAR
+========================================= */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+}
+
+.card {
+    aspect-ratio: 2.5 / 3.5;
+    perspective: 1000px;
+    cursor: pointer;
+}
+
+.card-inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.card.flipped .card-inner { transform: rotateY(180deg); }
+
+.card-front, .card-back {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden; border-radius: 8px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.5rem; font-weight: bold;
+}
+
+.card-front { background: linear-gradient(135deg, #1d4ed8, #3b82f6); border: 2px solid #60a5fa; }
+.card-back { background: #fff; color: #000; transform: rotateY(180deg); border: 3px solid #ccc; }
+
+.card.p1-won .card-back { border-color: var(--p1-color); box-shadow: 0 0 15px var(--p1-color); color: var(--p1-color); }
+.card.p2-won .card-back { border-color: var(--p2-color); box-shadow: 0 0 15px var(--p2-color); color: var(--p2-color); }
+
+/* =========================================
+   OYUN 2: GİZEMLİ KUPA
+========================================= */
+.cup-container {
+    display: flex; gap: 20px;
+    margin: 30px 0; perspective: 1000px;
+}
+
+.cup {
+    width: 80px; height: 100px;
+    background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+    border-radius: 10px 10px 5px 5px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 3rem; cursor: pointer;
+    box-shadow: 0 10px 20px rgba(185, 28, 28, 0.4), inset 0 -5px 15px rgba(0,0,0,0.5);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid #fca5a5;
+    position: relative;
+}
+
+.cup:hover { transform: translateY(-10px); }
+
+.cup.shuffling {
+    animation: shuffleCup 0.4s infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes shuffleCup {
+    0% { transform: translateX(-15px) rotate(-10deg); }
+    100% { transform: translateX(15px) rotate(10deg); }
+}
+
+.cup.reveal-gold {
+    transform: translateY(-40px) rotateX(20deg);
+    pointer-events: none; background: transparent; border: none; box-shadow: none;
+}
+.cup.reveal-gold::before { content: '💰'; position: absolute; bottom: -30px; font-size: 4rem; animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.cup.reveal-empty {
+    transform: translateY(-40px) rotateX(20deg);
+    pointer-events: none; background: transparent; border: none; box-shadow: none; opacity: 0.5;
+}
+
+@keyframes popUp { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+.action-btn { width: 100%; max-width: 200px; margin-bottom: 10px; font-size: 1.2rem; background: var(--p1-color); }
+.game-info { font-size: 1.2rem; color: var(--accent); text-align: center; }
+
+/* =========================================
+   OYUN 3: MAYINLI KUTULAR
+========================================= */
+.box-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.box {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2rem;
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+    transition: transform 0.3s, background 0.3s;
+}
+
+.box:hover { transform: scale(1.05) translateY(-5px); }
+
+.box.opened {
+    background: #1e293b;
+    pointer-events: none;
+    transform: scale(0.95);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.box.bomb { background: #ef4444 !important; color: white; animation: explode 0.5s; font-size: 3rem; }
+.box.safe { color: var(--p1-color); }
+
+@keyframes explode {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5); background: #fff; }
+    100% { transform: scale(0.95); }
+}
+
+/* =========================================
+   MODAL
+========================================= */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 100; opacity: 0; visibility: hidden; transition: all 0.5s;
+}
+.modal.show { opacity: 1; visibility: visible; }
+.modal-content {
+    background: #1e293b; padding: 40px 20px; border-radius: 20px;
+    text-align: center; transform: scale(0.8); transition: transform 0.5s;
+    border: 2px solid var(--accent); box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+    width: 90%; max-width: 400px;
+}
+.modal.show .modal-content { transform: scale(1); }
+.modal h1 { font-size: 2.2rem; margin-bottom: 15px; color: var(--accent); }
+.modal p { font-size: 1.2rem; margin-bottom: 25px; }
+.modal-buttons { display: flex; gap: 10px; justify-content: center; flex-direction: column; }
+
+/* =========================================
+   GENEL ROZETLER
+========================================= */
+.round-badge {
+    margin-top: 10px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* =========================================
+   OYUN 4: AŞK RULETİ
+========================================= */
+.love-roulette-wrapper {
+    position: relative;
+    width: 270px;
+    height: 270px;
+    margin: 5px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.love-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.2rem;
+    color: #ff4d6d;
+    z-index: 10;
+    filter: drop-shadow(0 4px 8px rgba(255, 77, 109, 0.6));
+    animation: pointerPulse 1.2s infinite alternate;
+}
+
+#love-roulette-canvas {
+    width: 270px;
+    height: 270px;
+    border-radius: 50%;
+    box-shadow: 0 0 25px rgba(255, 77, 109, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   OYUN 5: ŞANS ÇARKI
+========================================= */
+.wheel-wrapper {
+    position: relative;
+    width: 270px;
+    height: 270px;
+    margin: 5px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.wheel-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.2rem;
+    color: var(--accent);
+    z-index: 10;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+    animation: pointerPulse 1.2s infinite alternate;
+}
+
+@keyframes pointerPulse {
+    0% { transform: translateX(-50%) translateY(0); }
+    100% { transform: translateX(-50%) translateY(5px); }
+}
+
+#wheel-canvas {
+    width: 270px;
+    height: 270px;
+    border-radius: 50%;
+    box-shadow: 0 0 25px rgba(123, 44, 191, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   OYUN 6: ŞANS KULESİ
+========================================= */
+.tower-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+    margin: 5px 0;
+}
+
+.tower-floor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px 12px;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+}
+
+.tower-floor.active-floor {
+    opacity: 1;
+    border-color: var(--accent);
+    background: rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+    transform: scale(1.02);
+}
+
+.tower-floor.completed-floor {
+    opacity: 0.85;
+    border-color: var(--p1-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.floor-label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.floor-doors {
+    display: flex;
+    gap: 8px;
+}
+
+.door-btn {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.door-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.door-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.door-btn.door-safe {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border-color: #34d399 !important;
+}
+
+.door-btn.door-trap {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #fca5a5 !important;
+}
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Arka Plan Mouse Takip Efekti -->
+    <div id="mouse-glow"></div>
+
+    <!-- GİRİŞ ANİMASYONU (LOADER) -->
+    <div id="loader" class="loader-wrapper">
+        <div class="magic-circle"></div>
+        <p class="loading-text">Oyunlar Yükleniyor...</p>
+    </div>
+
+    <!-- ANA MENÜ -->
+    <div id="main-menu" class="screen hidden">
+        <h1 class="main-title">Eğlence Vakti!</h1>
+        <p class="subtitle">Arkadaşınla oynamak için bir oyun seç.</p>
+        <div class="menu-buttons">
+            <button class="btn glow-btn" onclick="startGame(1)">🃏 Şanslı Kartlar</button>
+            <button class="btn glow-btn" onclick="startGame(2)">🏆 Gizemli Kupa</button>
+            <button class="btn glow-btn" onclick="startGame(3)">💣 Mayınlı Kutular</button>
+            <button class="btn glow-btn" onclick="startGame(4)">💋 Aşk Ruleti</button>
+            <button class="btn glow-btn" onclick="startGame(5)">🎡 Şans Çarkı</button>
+            <button class="btn glow-btn" onclick="startGame(6)">🏰 Şans Kulesi</button>
+        </div>
+    </div>
+
+    <!-- OYUN ALANI -->
+    <div id="game-screen" class="screen hidden">
+        <!-- Oyun Alanı (Yukarıda) -->
+        <div id="game-board-container" class="game-board-container">
+            <!-- Oyun 1: Kartlar -->
+            <div id="game1-board" class="game-board hidden">
+                <div class="card-grid" id="card-grid"></div>
+            </div>
+            
+            <!-- Oyun 2: Gizemli Kupa -->
+            <div id="game2-board" class="game-board hidden">
+                <div class="cup-container" id="cup-container">
+                    <div class="cup" onclick="selectCup(0)"></div>
+                    <div class="cup" onclick="selectCup(1)"></div>
+                    <div class="cup" onclick="selectCup(2)"></div>
+                </div>
+                <p id="cup-info" class="game-info">Altını bul, boş çıkarsa sıra geçer!</p>
+            </div>
+
+            <!-- Oyun 3: Mayınlı Kutular -->
+            <div id="game3-board" class="game-board hidden">
+                <div class="box-grid" id="box-grid"></div>
+                <div class="box-actions" style="margin-top: 15px;">
+                    <button id="withdraw-btn" class="btn action-btn" style="background: var(--accent); color: black; display: none;" onclick="withdrawPlayer()">Puanı Al ve Çekil</button>
+                </div>
+                <p id="box-info" class="game-info">Mayını bulmadan puanları topla!</p>
+            </div>
+
+            <!-- Oyun 4: Aşk Ruleti -->
+            <div id="game4-board" class="game-board hidden">
+                <div class="love-roulette-wrapper">
+                    <div class="love-pointer">▼</div>
+                    <canvas id="love-roulette-canvas" width="270" height="270"></canvas>
+                </div>
+                <div class="roulette-actions" style="margin-top: 5px;">
+                    <button id="spin-love-roulette-btn" class="btn action-btn" style="background: linear-gradient(135deg, #ff4d6d, #c77dff); color: white;" onclick="spinLoveRoulette()">💋 Ruleti Çevir</button>
+                    <div id="love-task-actions" style="display: none; gap: 10px; width: 100%; max-width: 320px; justify-content: center; margin: 0 auto;">
+                        <button id="love-accept-btn" class="btn action-btn" style="background: #10b981; color: white; flex: 1; margin: 0; padding: 10px 8px; font-size: 1rem;" onclick="completeLoveTask(true)">✅ Yaptım (<span id="love-task-pts">0</span> Pt)</button>
+                        <button id="love-pass-btn" class="btn action-btn" style="background: #ef4444; color: white; flex: 1; margin: 0; padding: 10px 8px; font-size: 1rem;" onclick="completeLoveTask(false)">❌ Pas Geç (0 Pt)</button>
+                    </div>
+                </div>
+                <p id="love-roulette-info" class="game-info">Ruleti çevir ve çıkan tatlı görevi yap!</p>
+                <div id="love-roulette-round-indicator" class="round-badge">Tur: 1 / 5</div>
+            </div>
+
+            <!-- Oyun 5: Şans Çarkı -->
+            <div id="game5-board" class="game-board hidden">
+                <div class="wheel-wrapper">
+                    <div class="wheel-pointer">▼</div>
+                    <canvas id="wheel-canvas" width="270" height="270"></canvas>
+                </div>
+                <div class="wheel-actions" style="margin-top: 5px;">
+                    <button id="spin-wheel-btn" class="btn action-btn" onclick="spinWheel()">🎡 Çarkı Çevir</button>
+                </div>
+                <p id="wheel-info" class="game-info">Çarkı çevir, sürpriz puanları veya takası yakala!</p>
+                <div id="wheel-round-indicator" class="round-badge">Tur: 1 / 5</div>
+            </div>
+
+            <!-- Oyun 6: Şans Kulesi -->
+            <div id="game6-board" class="game-board hidden">
+                <div class="tower-container" id="tower-container">
+                    <div class="tower-floor" id="floor-5" data-floor="5">
+                        <span class="floor-label">5. Kat (+160 Pt)</span>
+                        <div class="floor-doors">
+                            <button class="door-btn" onclick="chooseTowerDoor(5, 0)">🚪 Sol</button>
+                            <button class="door-btn" onclick="chooseTowerDoor(5, 1)">🚪 Sağ</button>
+                        </div>
+                    </div>
+                    <div class="tower-floor" id="floor-4" data-floor="4">
+                        <span class="floor-label">4. Kat (+80 Pt)</span>
+                        <div class="floor-doors">
+                            <button class="door-btn" onclick="chooseTowerDoor(4, 0)">🚪 Sol</button>
+                            <button class="door-btn" onclick="chooseTowerDoor(4, 1)">🚪 Sağ</button>
+                        </div>
+                    </div>
+                    <div class="tower-floor" id="floor-3" data-floor="3">
+                        <span class="floor-label">3. Kat (+40 Pt)</span>
+                        <div class="floor-doors">
+                            <button class="door-btn" onclick="chooseTowerDoor(3, 0)">🚪 Sol</button>
+                            <button class="door-btn" onclick="chooseTowerDoor(3, 1)">🚪 Sağ</button>
+                        </div>
+                    </div>
+                    <div class="tower-floor" id="floor-2" data-floor="2">
+                        <span class="floor-label">2. Kat (+20 Pt)</span>
+                        <div class="floor-doors">
+                            <button class="door-btn" onclick="chooseTowerDoor(2, 0)">🚪 Sol</button>
+                            <button class="door-btn" onclick="chooseTowerDoor(2, 1)">🚪 Sağ</button>
+                        </div>
+                    </div>
+                    <div class="tower-floor active-floor" id="floor-1" data-floor="1">
+                        <span class="floor-label">1. Kat (+10 Pt)</span>
+                        <div class="floor-doors">
+                            <button class="door-btn" onclick="chooseTowerDoor(1, 0)">🚪 Sol</button>
+                            <button class="door-btn" onclick="chooseTowerDoor(1, 1)">🚪 Sağ</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tower-actions" style="margin-top: 5px;">
+                    <button id="tower-cashout-btn" class="btn action-btn" style="background: var(--accent); color: black;" onclick="towerCashOut()">💰 Puanı Al ve Çekil (<span id="tower-current-pts">0</span> Pt)</button>
+                </div>
+                <p id="tower-info" class="game-info">Kuleye tırman! 1 Kapı Güvenli, 1 Kapı Tuzak!</p>
+                <div id="tower-attempt-indicator" class="round-badge">Hak: 1 / 3</div>
+            </div>
+        </div>
+
+        <!-- Oyuncu Skorları (Alt Alta) -->
+        <div class="players-container">
+            <div class="player" id="player1">
+                <h2 class="player-name">Oyuncu 1</h2>
+                <div class="score-box">Puan: <span id="score1">0</span></div>
+                <div class="turn-indicator">Sıra Sende!</div>
+            </div>
+            <div class="player" id="player2">
+                <h2 class="player-name">Oyuncu 2</h2>
+                <div class="score-box">Puan: <span id="score2">0</span></div>
+                <div class="turn-indicator">Sıra Sende!</div>
+            </div>
+        </div>
+
+        <button class="btn back-btn" onclick="returnToMenu()">Ana Menüye Dön</button>
+    </div>
+
+    <!-- Sonuç Ekranı -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h1 id="winnerText">Oyuncu 1 Kazandı!</h1>
+            <p id="finalScores">Oyuncu 1: 300 | Oyuncu 2: 250</p>
+            <div class="modal-buttons">
+                <button class="btn" id="restartBtn" onclick="restartCurrentGame()">Tekrar Oyna</button>
+                <button class="btn" onclick="returnToMenu()">Menüye Dön</button>
+            </div>
+        </div>
+    </div>
+
+    <script >
+        // Arka plan glow efekti için mouse takibi
+document.addEventListener('mousemove', (e) => {
+    document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+    document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+});
+
+// DOM Elementleri
+const loader = document.getElementById('loader');
+const mainMenu = document.getElementById('main-menu');
+const gameScreen = document.getElementById('game-screen');
+const resultModal = document.getElementById('resultModal');
+
+const player1El = document.getElementById('player1');
+const player2El = document.getElementById('player2');
+const score1El = document.getElementById('score1');
+const score2El = document.getElementById('score2');
+
+// Oyun Panoları
+const game1Board = document.getElementById('game1-board');
+const game2Board = document.getElementById('game2-board');
+const game3Board = document.getElementById('game3-board');
+const game4Board = document.getElementById('game4-board');
+const game5Board = document.getElementById('game5-board');
+const game6Board = document.getElementById('game6-board');
+
+// Global Değişkenler
+let currentGameId = 0;
+let currentPlayer = 1;
+let score1 = 0;
+let score2 = 0;
+
+// Giriş Animasyonu
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        mainMenu.classList.remove('hidden');
+    }, 1500);
+});
+
+// Menü ve Oyun Geçişleri
+function startGame(gameId) {
+    mainMenu.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    currentGameId = gameId;
+    
+    game1Board.classList.add('hidden');
+    game2Board.classList.add('hidden');
+    game3Board.classList.add('hidden');
+    game4Board.classList.add('hidden');
+    game5Board.classList.add('hidden');
+    game6Board.classList.add('hidden');
+    
+    // Skorları Sıfırla
+    score1 = 0; score2 = 0;
+    currentPlayer = 1;
+    updateScoreUI();
+    updateTurnUI();
+
+    if (gameId === 1) {
+        game1Board.classList.remove('hidden');
+        initCardGame();
+    } else if (gameId === 2) {
+        game2Board.classList.remove('hidden');
+        initCupGame();
+    } else if (gameId === 3) {
+        game3Board.classList.remove('hidden');
+        initBoxGame();
+    } else if (gameId === 4) {
+        game4Board.classList.remove('hidden');
+        initLoveRouletteGame();
+    } else if (gameId === 5) {
+        game5Board.classList.remove('hidden');
+        initWheelGame();
+    } else if (gameId === 6) {
+        game6Board.classList.remove('hidden');
+        initTowerGame();
+    }
+}
+
+function returnToMenu() {
+    gameScreen.classList.add('hidden');
+    resultModal.classList.remove('show');
+    mainMenu.classList.remove('hidden');
+}
+
+function restartCurrentGame() {
+    resultModal.classList.remove('show');
+    startGame(currentGameId);
+}
+
+function updateScoreUI() {
+    score1El.textContent = score1;
+    score2El.textContent = score2;
+}
+
+function updateTurnUI() {
+    if (currentPlayer === 1) {
+        player1El.classList.add('active');
+        player2El.classList.remove('active');
+    } else {
+        player2El.classList.add('active');
+        player1El.classList.remove('active');
+    }
+}
+
+function showWinner(winnerMsg, color) {
+    const winnerText = document.getElementById('winnerText');
+    const finalScores = document.getElementById('finalScores');
+    
+    winnerText.textContent = winnerMsg;
+    winnerText.style.color = color;
+    finalScores.textContent = `Oyuncu 1: ${score1} | Oyuncu 2: ${score2}`;
+    
+    setTimeout(() => {
+        resultModal.classList.add('show');
+    }, 800);
+}
+
+/* =======================================
+   OYUN 1: ŞANSLI KARTLAR
+======================================= */
+let openedCards = 0;
+
+function initCardGame() {
+    const grid = document.getElementById('card-grid');
+    grid.innerHTML = '';
+    openedCards = 0;
+    
+    let numbers = [];
+    while(numbers.length < 10) {
+        let r = Math.floor(Math.random() * 99) + 1;
+        if(numbers.indexOf(r) === -1) numbers.push(r);
+    }
+    
+    numbers.forEach(num => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<div class="card-inner"><div class="card-front"></div><div class="card-back">${num}</div></div>`;
+        card.onclick = () => {
+            if(card.classList.contains('flipped')) return;
+            card.classList.add('flipped');
+            openedCards++;
+            
+            if(currentPlayer === 1) {
+                score1 += num; card.classList.add('p1-won');
+            } else {
+                score2 += num; card.classList.add('p2-won');
+            }
+            updateScoreUI();
+            
+            if(openedCards === 10) {
+                endCardGame();
+            } else {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                updateTurnUI();
+            }
+        };
+        grid.appendChild(card);
+    });
+    
+    // Kartlar oluşturulduktan sonra 3D Tilt efektini uygula
+    applyTiltEffect('.card', 25, 1.05);
+}
+
+function endCardGame() {
+    if(score1 > score2) showWinner('Oyuncu 1 Kazandı!', 'var(--p1-color)');
+    else if(score2 > score1) showWinner('Oyuncu 2 Kazandı!', 'var(--p2-color)');
+    else showWinner('Berabere!', 'var(--accent)');
+}
+
+/* =======================================
+   OYUN 2: GİZEMLİ KUPA
+======================================= */
+/* =======================================
+   OYUN 2: GİZEMLİ KUPA
+======================================= */
+let cupRounds = 0;
+let goldIndex = -1;
+let isShuffling = false;
+let cupSequence = [];
+
+function generateCupSequence() {
+    // 10 turluk oyun için: her birinden en az 2 adet garanti (toplam 6)
+    let seq = [0, 0, 1, 1, 2, 2];
+    // Kalan 4 tur tamamen rastgele
+    for (let i = 0; i < 4; i++) {
+        seq.push(Math.floor(Math.random() * 3));
+    }
+    // Diziyi tamamen karıştır
+    for (let i = seq.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [seq[i], seq[j]] = [seq[j], seq[i]];
+    }
+    cupSequence = seq;
+}
+
+function initCupGame() {
+    cupRounds = 0;
+    generateCupSequence(); // Oyun başlarken 10'luk seriyi oluştur
+    document.getElementById('cup-info').textContent = `Oyuncu 1, altın hangi kupada?`;
+    resetCups();
+}
+
+function resetCups() {
+    const cups = document.querySelectorAll('.cup');
+    cups.forEach(cup => {
+        cup.className = 'cup shuffling';
+        cup.innerHTML = '';
+    });
+    isShuffling = true;
+    
+    // 10'luk diziden sıradakini al (olur da tur sınırı aşılırsa normal random ver)
+    goldIndex = cupRounds < cupSequence.length ? cupSequence[cupRounds] : Math.floor(Math.random() * 3);
+    
+    setTimeout(() => {
+        cups.forEach(cup => {
+            cup.className = 'cup';
+            cup.innerHTML = '🏮';
+        });
+        isShuffling = false;
+    }, 800);
+}
+
+function selectCup(index) {
+    if(isShuffling) return;
+    isShuffling = true; // Prevent multiple clicks
+    
+    const cups = document.querySelectorAll('.cup');
+    let found = false;
+    
+    if(index === goldIndex) {
+        cups[index].classList.add('reveal-gold');
+        if(currentPlayer === 1) score1 += 50; else score2 += 50;
+        found = true;
+    } else {
+        cups[index].classList.add('reveal-empty');
+        cups[goldIndex].classList.add('reveal-gold');
+    }
+    
+    updateScoreUI();
+    cupRounds++;
+    
+    setTimeout(() => {
+        if(cupRounds >= 10) {
+            document.getElementById('cup-info').textContent = 'Oyun Bitti!';
+            endCardGame();
+        } else {
+            // Eğer altını bulduysa sıra geçmez, aynı oyuncu devam eder
+            if (!found) {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+            updateTurnUI();
+            
+            if (found) {
+                document.getElementById('cup-info').textContent = `Doğru bildin! Oyuncu ${currentPlayer}, tekrar seç!`;
+            } else {
+                document.getElementById('cup-info').textContent = `Bilemedin! Oyuncu ${currentPlayer}, altın hangi kupada?`;
+            }
+            
+            resetCups();
+        }
+    }, 1500);
+}
+
+/* =======================================
+   OYUN 3: MAYINLI KUTULAR
+======================================= */
+let boxesOpened = 0;
+let p1Withdrawn = false;
+let p2Withdrawn = false;
+
+function initBoxGame() {
+    const grid = document.getElementById('box-grid');
+    grid.innerHTML = '';
+    boxesOpened = 0;
+    p1Withdrawn = false;
+    p2Withdrawn = false;
+    document.getElementById('box-info').textContent = 'Mayını bulmadan puanları topla!';
+    document.getElementById('withdraw-btn').style.display = 'inline-block';
+    
+    let contents = [20, 20, 30, 40, 50, 60, 70, 80, 'BOMB'];
+    contents.sort(() => Math.random() - 0.5);
+    
+    contents.forEach(content => {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.innerHTML = '🎁';
+        
+        box.onclick = () => {
+            if(box.classList.contains('opened') || (currentPlayer === 1 && p1Withdrawn) || (currentPlayer === 2 && p2Withdrawn)) return;
+            box.classList.add('opened');
+            boxesOpened++;
+            
+            if(content === 'BOMB') {
+                box.innerHTML = '💣';
+                box.classList.add('bomb');
+                document.getElementById('box-info').textContent = `💥 Oyuncu ${currentPlayer} MAYINA BASTI!`;
+                
+                if(currentPlayer === 1) score1 = -999; else score2 = -999;
+                updateScoreUI();
+                document.getElementById('withdraw-btn').style.display = 'none';
+                setTimeout(() => { endCardGame(); }, 1500);
+            } else {
+                box.innerHTML = content;
+                box.classList.add('safe');
+                if(currentPlayer === 1) score1 += content;
+                else score2 += content;
+                
+                updateScoreUI();
+                
+                if(boxesOpened === 9) {
+                    endCardGame();
+                } else {
+                    passTurnIfPossible();
+                }
+            }
+        };
+        grid.appendChild(box);
+    });
+}
+
+function withdrawPlayer() {
+    if(currentPlayer === 1) {
+        p1Withdrawn = true;
+        document.getElementById('box-info').textContent = `Oyuncu 1 çekildi!`;
+    } else {
+        p2Withdrawn = true;
+        document.getElementById('box-info').textContent = `Oyuncu 2 çekildi!`;
+    }
+    
+    if(p1Withdrawn && p2Withdrawn) {
+        document.getElementById('box-info').textContent = `İki oyuncu da çekildi!`;
+        document.getElementById('withdraw-btn').style.display = 'none';
+        endCardGame();
+    } else {
+        passTurnIfPossible();
+    }
+}
+
+function passTurnIfPossible() {
+    if (currentPlayer === 1) {
+        if (!p2Withdrawn) currentPlayer = 2;
+    } else {
+        if (!p1Withdrawn) currentPlayer = 1;
+    }
+    updateTurnUI();
+}
+
+// 3D Tilt Efekti (Menü Butonları ve Oyuncu Kartları)
+function applyTiltEffect(selector, tiltAmount = 15, scaleAmount = 1) {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(el => {
+        el.addEventListener('mousemove', (e) => {
+            const rect = el.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -tiltAmount;
+            const rotateY = ((x - centerX) / centerX) * tiltAmount;
+            
+            el.style.transform = `perspective(1000px) scale(${scaleAmount}) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+        
+        el.addEventListener('mouseleave', () => {
+            // Hover dışına çıkınca aktifse scale'i koru, değilse normale dön
+            const isScale = el.classList.contains('glow-btn') ? 1 : 1; 
+            el.style.transform = `perspective(1000px) scale(${isScale}) rotateX(0deg) rotateY(0deg)`;
+            
+            // Eğer player active ise scale animasyonu CSS'ten geldiği için transformu temizleyelim
+            if(el.classList.contains('player') || el.classList.contains('glow-btn')) {
+                setTimeout(() => { el.style.transform = ''; }, 300); // 300ms sonra inline transform'u kaldır ki CSS hover/active çalışsın
+            }
+        });
+    });
+}
+
+// Tilt efektlerini uygula (Ayar artırıldı)
+applyTiltEffect('.glow-btn', 40, 1.15); // Menü butonları için daha şiddetli 3D
+applyTiltEffect('.player', 25, 1.05);   // Oyuncu kartları için belirgin 3D
+applyTiltEffect('.door-btn', 15, 1.05); // Kule kapıları için 3D
+
+/* =======================================
+   OYUN 4: AŞK RULETİ
+====================================== */
+let isLoveRouletteSpinning = false;
+let loveRouletteSpins = 0;
+let currentLoveRouletteAngle = 0;
+let pendingLoveTask = null;
+
+const loveRouletteSectors = [
+    { label: '😘 Yanağından Öp', color: '#ff4d6d', textCol: '#fff', val: 50, action: 'Yanağından öp!' },
+    { label: '👂 Kulağına Fısılda', color: '#c77dff', textCol: '#fff', val: 40, action: 'Kulağına sevimli bir şey fısılda!' },
+    { label: '💓 Göğsüne Temas Et', color: '#ff758f', textCol: '#fff', val: 60, action: 'Göğsüne dokun & kalbini hisset!' },
+    { label: '💃 Belinden Kavra', color: '#ffb703', textCol: '#000', val: 50, action: 'Belinden kavra & kendine çek!' },
+    { label: '✋ Şaplak At!', color: '#e71d36', textCol: '#fff', val: 70, action: 'Eğlenceli bir şaplak at!' },
+    { label: '💆 10 Sn Masaj', color: '#7209b7', textCol: '#fff', val: 45, action: '10 saniye masaj yap!' },
+    { label: '💋 Dudaktan Öp!', color: '#ff0054', textCol: '#fff', val: 100, action: 'Dudaktan tatlı bir öpücük!' },
+    { label: '🙈 Sıkıca Sarıl', color: '#3a86ff', textCol: '#fff', val: 30, action: 'Sıkıca sarıl & dön!' }
+];
+
+function drawLoveRoulette(angle) {
+    const canvas = document.getElementById('love-roulette-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const numSectors = loveRouletteSectors.length;
+    const arc = (2 * Math.PI) / numSectors;
+    const radius = canvas.width / 2;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    for (let i = 0; i < numSectors; i++) {
+        const sectorAngle = angle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = loveRouletteSectors[i].color;
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius - 4, sectorAngle, sectorAngle + arc);
+        ctx.lineTo(radius, radius);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(sectorAngle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = loveRouletteSectors[i].textCol;
+        ctx.font = 'bold 12px Poppins, sans-serif';
+        ctx.fillText(loveRouletteSectors[i].label, radius - 14, 5);
+        ctx.restore();
+    }
+    
+    ctx.beginPath();
+    ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
+    ctx.fillStyle = '#140c1f';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ff4d6d';
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ff4d6d';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💋', radius, radius);
+}
+
+function initLoveRouletteGame() {
+    isLoveRouletteSpinning = false;
+    loveRouletteSpins = 0;
+    currentLoveRouletteAngle = 0;
+    pendingLoveTask = null;
+    document.getElementById('love-roulette-info').textContent = 'Ruleti çevir ve çıkan tatlı görevi yap!';
+    document.getElementById('love-roulette-round-indicator').textContent = 'Tur: 1 / 5';
+    
+    document.getElementById('spin-love-roulette-btn').style.display = 'inline-block';
+    document.getElementById('spin-love-roulette-btn').disabled = false;
+    document.getElementById('love-task-actions').style.display = 'none';
+    drawLoveRoulette(0);
+}
+
+function spinLoveRoulette() {
+    if (isLoveRouletteSpinning) return;
+    isLoveRouletteSpinning = true;
+    
+    const spinBtn = document.getElementById('spin-love-roulette-btn');
+    const info = document.getElementById('love-roulette-info');
+    spinBtn.disabled = true;
+    info.textContent = 'Aşk Ruleti dönüyor... 💋';
+    
+    const spinDuration = 3200;
+    const startTime = performance.now();
+    const startAngle = currentLoveRouletteAngle;
+    const totalRotation = (Math.floor(Math.random() * 5) + 6) * 2 * Math.PI + Math.random() * 2 * Math.PI;
+    
+    function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / spinDuration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentLoveRouletteAngle = startAngle + totalRotation * easeOut;
+        
+        drawLoveRoulette(currentLoveRouletteAngle);
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateSpin);
+        } else {
+            const numSectors = loveRouletteSectors.length;
+            const arc = (2 * Math.PI) / numSectors;
+            let normalizedAngle = (currentLoveRouletteAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            let pointerAngle = (-Math.PI / 2 - normalizedAngle) % (2 * Math.PI);
+            if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+            
+            const winningIndex = Math.floor(pointerAngle / arc) % numSectors;
+            pendingLoveTask = loveRouletteSectors[winningIndex];
+            
+            info.textContent = `🔥 GÖREV: Oyuncu ${currentPlayer} -> ${pendingLoveTask.action} (+${pendingLoveTask.val} Pt)`;
+            document.getElementById('love-task-pts').textContent = pendingLoveTask.val;
+            
+            spinBtn.style.display = 'none';
+            document.getElementById('love-task-actions').style.display = 'flex';
+            isLoveRouletteSpinning = false;
+        }
+    }
+    
+    requestAnimationFrame(animateSpin);
+}
+
+function completeLoveTask(accepted) {
+    if (!pendingLoveTask || isLoveRouletteSpinning) return;
+    
+    const info = document.getElementById('love-roulette-info');
+    const spinBtn = document.getElementById('spin-love-roulette-btn');
+    const taskActions = document.getElementById('love-task-actions');
+    
+    if (accepted) {
+        if (currentPlayer === 1) score1 += pendingLoveTask.val;
+        else score2 += pendingLoveTask.val;
+        updateScoreUI();
+        info.textContent = `🎉 Oyuncu ${currentPlayer} görevi yaptı ve +${pendingLoveTask.val} puan kazandı!`;
+    } else {
+        info.textContent = `🙈 Oyuncu ${currentPlayer} pas geçti (0 Puan).`;
+    }
+    
+    taskActions.style.display = 'none';
+    spinBtn.style.display = 'inline-block';
+    spinBtn.disabled = true;
+    
+    loveRouletteSpins++;
+    const currentRoundNum = Math.min(5, Math.floor(loveRouletteSpins / 2) + 1);
+    document.getElementById('love-roulette-round-indicator').textContent = `Tur: ${currentRoundNum} / 5`;
+    
+    setTimeout(() => {
+        if (loveRouletteSpins >= 10) {
+            endCardGame();
+        } else {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateTurnUI();
+            spinBtn.disabled = false;
+            pendingLoveTask = null;
+        }
+    }, 1200);
+}
+
+/* =======================================
+   OYUN 5: ŞANS ÇARKI
+====================================== */
+let isWheelSpinning = false;
+let wheelSpins = 0;
+let currentWheelAngle = 0;
+
+const wheelSectors = [
+    { label: '🌟 +100', color: '#ffd700', textCol: '#000', type: 'pts', val: 100 },
+    { label: '💥 İFLAS', color: '#dc2626', textCol: '#fff', type: 'pts', val: -50 },
+    { label: '💎 +70', color: '#9333ea', textCol: '#fff', type: 'pts', val: 70 },
+    { label: '🔄 TAKAS', color: '#06b6d4', textCol: '#000', type: 'swap', val: 0 },
+    { label: '🪙 +40', color: '#10b981', textCol: '#fff', type: 'pts', val: 40 },
+    { label: '⚡ 2X PUAN', color: '#f59e0b', textCol: '#000', type: 'pts', val: 80 },
+    { label: '🎁 +50', color: '#3b82f6', textCol: '#fff', type: 'pts', val: 50 },
+    { label: '💀 PAS', color: '#4b5563', textCol: '#fff', type: 'pts', val: -20 }
+];
+
+function drawWheel(angle) {
+    const canvas = document.getElementById('wheel-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const numSectors = wheelSectors.length;
+    const arc = (2 * Math.PI) / numSectors;
+    const radius = canvas.width / 2;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    for (let i = 0; i < numSectors; i++) {
+        const sectorAngle = angle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = wheelSectors[i].color;
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius - 4, sectorAngle, sectorAngle + arc);
+        ctx.lineTo(radius, radius);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(sectorAngle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = wheelSectors[i].textCol;
+        ctx.font = 'bold 14px Poppins, sans-serif';
+        ctx.fillText(wheelSectors[i].label, radius - 18, 5);
+        ctx.restore();
+    }
+    
+    ctx.beginPath();
+    ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
+    ctx.fillStyle = '#0b090a';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffd700';
+    ctx.stroke();
+}
+
+function initWheelGame() {
+    isWheelSpinning = false;
+    wheelSpins = 0;
+    currentWheelAngle = 0;
+    document.getElementById('wheel-info').textContent = 'Çarkı çevir, sürpriz puanları veya takası yakala!';
+    document.getElementById('wheel-round-indicator').textContent = 'Tur: 1 / 5';
+    document.getElementById('spin-wheel-btn').disabled = false;
+    drawWheel(0);
+}
+
+function spinWheel() {
+    if (isWheelSpinning) return;
+    isWheelSpinning = true;
+    
+    const spinBtn = document.getElementById('spin-wheel-btn');
+    const wheelInfo = document.getElementById('wheel-info');
+    spinBtn.disabled = true;
+    wheelInfo.textContent = 'Çark dönüyor... 🎡';
+    
+    const spinDuration = 3200;
+    const startTime = performance.now();
+    const startAngle = currentWheelAngle;
+    const totalRotation = (Math.floor(Math.random() * 5) + 6) * 2 * Math.PI + Math.random() * 2 * Math.PI;
+    
+    function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / spinDuration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentWheelAngle = startAngle + totalRotation * easeOut;
+        
+        drawWheel(currentWheelAngle);
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateSpin);
+        } else {
+            const numSectors = wheelSectors.length;
+            const arc = (2 * Math.PI) / numSectors;
+            let normalizedAngle = (currentWheelAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            let pointerAngle = (-Math.PI / 2 - normalizedAngle) % (2 * Math.PI);
+            if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+            
+            const winningIndex = Math.floor(pointerAngle / arc) % numSectors;
+            const result = wheelSectors[winningIndex];
+            
+            if (result.type === 'swap') {
+                if ((currentPlayer === 1 && score1 < score2) || (currentPlayer === 2 && score2 < score1)) {
+                    [score1, score2] = [score2, score1];
+                    wheelInfo.textContent = `🔄 İNANILMAZ! Oyuncu ${currentPlayer} skorları takas etti!`;
+                } else {
+                    wheelInfo.textContent = `🔄 SKOR TAKASI! Skorun önde olduğu için değişmedi.`;
+                }
+            } else {
+                if (result.val > 0) {
+                    wheelInfo.textContent = `${result.label}! +${result.val} Puan Kazandın!`;
+                } else {
+                    wheelInfo.textContent = `${result.label}! ${result.val} Puan Kaybettin!`;
+                }
+                if (currentPlayer === 1) score1 = Math.max(0, score1 + result.val);
+                else score2 = Math.max(0, score2 + result.val);
+            }
+            
+            updateScoreUI();
+            wheelSpins++;
+            const currentRoundNum = Math.min(5, Math.floor(wheelSpins / 2) + 1);
+            document.getElementById('wheel-round-indicator').textContent = `Tur: ${currentRoundNum} / 5`;
+            
+            setTimeout(() => {
+                if (wheelSpins >= 10) {
+                    endCardGame();
+                } else {
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    updateTurnUI();
+                    spinBtn.disabled = false;
+                    isWheelSpinning = false;
+                }
+            }, 1500);
+        }
+    }
+    
+    requestAnimationFrame(animateSpin);
+}
+
+/* =======================================
+   OYUN 6: ŞANS KULESİ
+====================================== */
+let towerFloor = 1;
+let towerAccumulated = 0;
+let towerAttempts = 0;
+let towerSafeDoors = [0, 0, 0, 0, 0];
+let isTowerAnimating = false;
+
+const floorRewards = [0, 10, 20, 40, 80, 160];
+
+function initTowerGame() {
+    towerAttempts = 0;
+    isTowerAnimating = false;
+    document.getElementById('tower-info').textContent = 'Kuleye tırman! 1 Kapı Güvenli, 1 Kapı Tuzak!';
+    document.getElementById('tower-attempt-indicator').textContent = 'Hak: 1 / 3';
+    resetTowerRun();
+}
+
+function resetTowerRun() {
+    towerFloor = 1;
+    towerAccumulated = 0;
+    isTowerAnimating = false;
+    document.getElementById('tower-current-pts').textContent = '0';
+    document.getElementById('tower-cashout-btn').style.display = 'none';
+    
+    towerSafeDoors = [
+        Math.floor(Math.random() * 2),
+        Math.floor(Math.random() * 2),
+        Math.floor(Math.random() * 2),
+        Math.floor(Math.random() * 2),
+        Math.floor(Math.random() * 2)
+    ];
+    
+    updateTowerUI();
+}
+
+function updateTowerUI() {
+    for (let f = 1; f <= 5; f++) {
+        const floorEl = document.getElementById(`floor-${f}`);
+        if (!floorEl) continue;
+        const doorBtns = floorEl.querySelectorAll('.door-btn');
+        
+        floorEl.className = 'tower-floor';
+        if (f === towerFloor) {
+            floorEl.classList.add('active-floor');
+        } else if (f < towerFloor) {
+            floorEl.classList.add('completed-floor');
+        }
+        
+        doorBtns.forEach((btn, idx) => {
+            btn.className = 'door-btn';
+            btn.innerHTML = idx === 0 ? '🚪 Sol' : '🚪 Sağ';
+            btn.disabled = (f !== towerFloor || isTowerAnimating);
+        });
+    }
+}
+
+function chooseTowerDoor(floor, doorIdx) {
+    if (floor !== towerFloor || isTowerAnimating) return;
+    isTowerAnimating = true;
+    
+    const floorEl = document.getElementById(`floor-${floor}`);
+    const doorBtns = floorEl.querySelectorAll('.door-btn');
+    const chosenBtn = doorBtns[doorIdx];
+    const towerInfo = document.getElementById('tower-info');
+    const cashoutBtn = document.getElementById('tower-cashout-btn');
+    
+    const isSafe = (doorIdx === towerSafeDoors[floor - 1]);
+    
+    if (isSafe) {
+        chosenBtn.classList.add('door-safe');
+        chosenBtn.innerHTML = '💎 GÜVENLİ!';
+        towerAccumulated += floorRewards[floor];
+        document.getElementById('tower-current-pts').textContent = towerAccumulated;
+        cashoutBtn.style.display = 'inline-block';
+        
+        if (floor < 5) {
+            towerInfo.textContent = `🎉 Güvenli! ${floor}. Katı geçtin (+${floorRewards[floor]} Pt). Devam et ya da çekil!`;
+            setTimeout(() => {
+                towerFloor++;
+                isTowerAnimating = false;
+                updateTowerUI();
+            }, 800);
+        } else {
+            towerInfo.textContent = `👑 TEBRİKLER! Zirveye ulaştın! Toplam +${towerAccumulated} Puan!`;
+            if (currentPlayer === 1) score1 += towerAccumulated;
+            else score2 += towerAccumulated;
+            updateScoreUI();
+            finishTowerTurn();
+        }
+    } else {
+        chosenBtn.classList.add('door-trap');
+        chosenBtn.innerHTML = '💥 TUZAK!';
+        towerInfo.textContent = `💥 TUZAK! Kule çöktü ve bu tur puan alamadın!`;
+        cashoutBtn.style.display = 'none';
+        finishTowerTurn();
+    }
+}
+
+function towerCashOut() {
+    if (towerAccumulated === 0 || isTowerAnimating) return;
+    isTowerAnimating = true;
+    
+    const towerInfo = document.getElementById('tower-info');
+    towerInfo.textContent = `💰 Oyuncu ${currentPlayer} ${towerAccumulated} puanı alarak çekildi!`;
+    
+    if (currentPlayer === 1) score1 += towerAccumulated;
+    else score2 += towerAccumulated;
+    updateScoreUI();
+    
+    finishTowerTurn();
+}
+
+function finishTowerTurn() {
+    towerAttempts++;
+    const currentAttemptNum = Math.min(3, Math.floor(towerAttempts / 2) + 1);
+    document.getElementById('tower-attempt-indicator').textContent = `Hak: ${currentAttemptNum} / 3`;
+    
+    setTimeout(() => {
+        if (towerAttempts >= 6) {
+            endCardGame();
+        } else {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateTurnUI();
+            resetTowerRun();
+        }
+    }, 1500);
+}
+
+
+    </script>
+</body>
+</html>
